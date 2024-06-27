@@ -80,7 +80,8 @@ pub fn channel(network_interface: &NetworkInterface, config: Config) -> io::Resu
         target_os = "freebsd",
         target_os = "netbsd",
         target_os = "illumos",
-        target_os = "solaris"
+        target_os = "solaris",
+        target_os = "nto"
     ))]
     fn get_fd(_attempts: usize) -> io::Result<libc::c_int> {
         let c_file_name = CString::new(&b"/dev/bpf"[..]).unwrap();
@@ -120,7 +121,8 @@ pub fn channel(network_interface: &NetworkInterface, config: Config) -> io::Resu
         target_os = "freebsd",
         target_os = "netbsd",
         target_os = "illumos",
-        target_os = "solaris"
+        target_os = "solaris",
+        target_os = "nto"
     ))]
     fn set_feedback(fd: libc::c_int) -> io::Result<()> {
         if unsafe { bpf::ioctl(fd, bpf::BIOCFEEDBACK, &1) } == -1 {
@@ -295,6 +297,16 @@ impl DataLinkSender for DataLinkSenderImpl {
             };
             for chunk in self.write_buffer[..len].chunks_mut(packet_size) {
                 func(chunk);
+                #[cfg(target_os = "nto")]
+                let timeout = self.timeout
+                    .as_mut()
+                    .map(|to| to as *mut libc::timespec)
+                    .unwrap_or(ptr::null_mut());
+                #[cfg(not(target_os = "nto"))]
+                let timeout = self.timeout
+                    .as_ref()
+                    .map(|to| to as *const libc::timespec)
+                    .unwrap_or(ptr::null());
                 let ret = unsafe {
                     libc::FD_SET(self.fd.fd, &mut self.fd_set as *mut libc::fd_set);
                     libc::pselect(
@@ -302,10 +314,7 @@ impl DataLinkSender for DataLinkSenderImpl {
                         ptr::null_mut(),
                         &mut self.fd_set as *mut libc::fd_set,
                         ptr::null_mut(),
-                        self.timeout
-                            .as_ref()
-                            .map(|to| to as *const libc::timespec)
-                            .unwrap_or(ptr::null()),
+                        timeout,
                         ptr::null(),
                     )
                 };
@@ -342,15 +351,22 @@ impl DataLinkSender for DataLinkSenderImpl {
         };
         let ret = unsafe {
             libc::FD_SET(self.fd.fd, &mut self.fd_set as *mut libc::fd_set);
+            #[cfg(target_os = "nto")]
+            let timeout = self.timeout
+                .as_mut()
+                .map(|to| to as *mut libc::timespec)
+                .unwrap_or(ptr::null_mut());
+            #[cfg(not(target_os = "nto"))]
+            let timeout = self.timeout
+                .as_ref()
+                .map(|to| to as *const libc::timespec)
+                .unwrap_or(ptr::null());
             libc::pselect(
                 self.fd.fd + 1,
                 ptr::null_mut(),
                 &mut self.fd_set as *mut libc::fd_set,
                 ptr::null_mut(),
-                self.timeout
-                    .as_ref()
-                    .map(|to| to as *const libc::timespec)
-                    .unwrap_or(ptr::null()),
+                timeout,
                 ptr::null(),
             )
         };
@@ -392,15 +408,22 @@ impl DataLinkReceiver for DataLinkReceiverImpl {
             let buffer = &mut self.read_buffer[self.buffer_offset..];
             let ret = unsafe {
                 libc::FD_SET(self.fd.fd, &mut self.fd_set as *mut libc::fd_set);
+                #[cfg(target_os = "nto")]
+                let timeout = self.timeout
+                    .as_mut()
+                    .map(|to| to as *mut libc::timespec)
+                    .unwrap_or(ptr::null_mut());
+                #[cfg(not(target_os = "nto"))]
+                let timeout = self.timeout
+                    .as_ref()
+                    .map(|to| to as *const libc::timespec)
+                    .unwrap_or(ptr::null());
                 libc::pselect(
                     self.fd.fd + 1,
                     &mut self.fd_set as *mut libc::fd_set,
                     ptr::null_mut(),
                     ptr::null_mut(),
-                    self.timeout
-                        .as_ref()
-                        .map(|to| to as *const libc::timespec)
-                        .unwrap_or(ptr::null()),
+                    timeout,
                     ptr::null(),
                 )
             };

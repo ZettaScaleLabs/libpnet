@@ -31,7 +31,8 @@ const SIZEOF_C_UINT: libc::c_ulong = 4;
     target_os = "freebsd",
     target_os = "netbsd",
     target_os = "illumos",
-    target_os = "solaris"
+    target_os = "solaris",
+    target_os = "nto"
 ))]
 const SIZEOF_C_LONG: libc::c_int = 8;
 
@@ -54,7 +55,7 @@ pub const BIOCSRTIMEOUT: libc::c_ulong =
 #[cfg(any(target_os = "freebsd", target_os = "illumos", target_os = "solaris"))]
 pub const BIOCFEEDBACK: libc::c_ulong =
     IOC_IN | ((SIZEOF_C_UINT & IOCPARM_MASK) << 16) | (('B' as libc::c_ulong) << 8) | 124;
-#[cfg(target_os = "netbsd")]
+#[cfg(any(target_os = "netbsd", target_os = "nto"))]
 pub const BIOCFEEDBACK: libc::c_ulong =
     IOC_IN | ((SIZEOF_C_UINT & IOCPARM_MASK) << 16) | (('B' as libc::c_ulong) << 8) | 125;
 // NOTE Could use BIOCSSEESENT on OS X, though set to 1 by default anyway
@@ -65,7 +66,8 @@ pub const DLT_NULL: libc::c_uint = 0;
     target_os = "freebsd",
     target_os = "netbsd",
     target_os = "illumos",
-    target_os = "solaris"
+    target_os = "solaris",
+    target_os = "nto"
 ))]
 const BPF_ALIGNMENT: libc::c_int = SIZEOF_C_LONG;
 #[cfg(any(
@@ -101,7 +103,8 @@ pub struct ifreq {
     target_os = "solaris",
     target_os = "macos",
     target_os = "ios",
-    target_os = "tvos"
+    target_os = "tvos",
+    target_os = "nto"
 ))]
 #[repr(C)]
 pub struct sockaddr_dl {
@@ -121,6 +124,7 @@ pub struct sockaddr_dl {
     target_os = "netbsd",
     target_os = "illumos",
     target_os = "solaris",
+    target_os = "nto",
     all(
         any(target_os = "macos", target_os = "ios", target_os = "tvos"),
         target_pointer_width = "32"

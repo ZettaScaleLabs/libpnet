@@ -15,6 +15,7 @@
     target_os = "macos",
     target_os = "ios",
     target_os = "tvos",
+    target_os = "nto",
     windows
 ))]
 pub mod bpf;
